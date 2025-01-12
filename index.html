@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Generator</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script>
+
+        async function submitForm(event) {
+    event.preventDefault();
+
+    const topic = document.getElementById('topic').value.trim();
+    const content = document.getElementById('content').value.trim();
+    const code = document.getElementById('code').value.trim();
+
+    if (!topic || !content || !code) {
+        alert("Please fill in all fields.");
+        return;
+    }
+
+    try {
+        const response = await fetch('/generate-video', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ topic, content, code })
+        });
+
+        const result = await response.json().catch(() => ({ error: "Invalid response from the server" }));
+
+        if (response.ok && result.video_file) {
+            alert('Video created successfully!');
+            const downloadLink = document.getElementById('download-link');
+            downloadLink.href = '/templates/final_video.mp4'; 
+            downloadLink.style.display = 'block';
+        } else {
+            alert('Error: ' + (result.error || 'An unknown error occurred.'));
+            const downloadLink = document.getElementById('download-link');
+            downloadLink.style.display = 'none'; // Hide link on failure
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('An error occurred while processing your request.');
+    }
+}
+
+
+
+async function cleanup() {
+    try {
+        const response = await fetch('/cleanup', { method: 'POST' });
+        const result = await response.json();
+        alert(result.message || "Cleanup completed.");
+    } catch (error) {
+        console.error('Error during cleanup:', error);
+        alert('An error occurred while cleaning up.');
+    }
+}
+
+    </script>
+</head>
+<body>
+    <header>
+        <h1>Generate Video</h1>
+    </header>
+    <div class="container">
+        <form id="video-form" onsubmit="submitForm(event)">
+            <label for="topic">Topic:</label>
+            <input type="text" id="topic" name="topic" placeholder="Enter the topic" required>
+            
+            <label for="content">Content:</label>
+            <textarea id="content" name="content" rows="5" placeholder="Enter the content" required></textarea>
+            
+            <label for="code">Code:</label>
+            <textarea id="code" name="code" rows="10" placeholder="Enter the code" required></textarea>
+            
+            <button type="submit">Generate Video</button>
+        </form>
+        <button onclick="cleanup()">Cleanup</button>
+
+        <!-- Hidden download link -->
+        <a id="download-link" href="#" style="display:none;" download>Download Video</a>
+    </div>
+</body>
+</html>
